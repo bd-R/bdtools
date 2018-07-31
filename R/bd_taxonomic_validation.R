@@ -25,14 +25,9 @@
 
 bd_taxonomic_validation<-function(df=NULL){
   
-  
-  tax_lvl<- readline(prompt="Choose the taxonomic level for validating the data
-                 1) kingdom
-                 2) phylum
-                 3) class
-                 4) order
-                 5) family
-                 6) genus ")
+  choice<-c("kingdom","phylum","class","order","family","genus")
+  index<-menu(choice,title = "Choose the taxonomic level for validating the data")
+  tax_lvl<- choice[index]
   
   tax_ch<-readline(prompt="Enter the value of taxonomic level chosen above")
   

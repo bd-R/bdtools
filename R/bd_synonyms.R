@@ -19,13 +19,10 @@
 
 bd_synonym<-function(name=NULL){
   
-  db1<- readline(prompt="Enter The data base from where you want synonym, 
-                 below are the choices (for marine species use worms as the data base)
-                 1) 'itis'
-                 2) 'col'
-                 3) 'tropicos'
-                 4) 'nbn'
-                 5) 'worms' ")
+  choice<-c("itis","col","tropicos","nbn","worms")
+  index<-menu(choice,title ="Enter The data base from where you want synonym" )
+  
+  db1<-choice[index]
   if(db1=="itis"|| db1=="col" || db1=="tropicos" || db1=="nbn"){
     
     id<-taxize::get_ids(names=name, db=db1)
@@ -35,7 +32,8 @@ bd_synonym<-function(name=NULL){
       df<-as.data.frame(syn[[1]][[1]])
       if(nrow(df)==0){
         
-        stop("No match for synonym with the data base, please change the data base selected")
+        warning("No match for synonym with the data base, please change the data base selected")
+        return(NULL)
         
       }else{
         
@@ -44,7 +42,8 @@ bd_synonym<-function(name=NULL){
       
     }else{
       
-      stop("There is no match for synonym or incorrect scientific name")
+      warning("There is no match for synonym or incorrect scientific name")
+      return(NULL)
       
     }
     
@@ -54,7 +53,8 @@ bd_synonym<-function(name=NULL){
     df<-as.data.frame(syn[[1]])
     if(nrow(df)==0){
       
-      stop("There is no match for synonym with worms data base")
+      warning("There is no match for synonym with worms data base")
+      return(NULL)
       
     }else{
       
@@ -64,7 +64,8 @@ bd_synonym<-function(name=NULL){
     
   }else{
     
-    stop("The entered data base is incorrect, please select from 'itis','col','tropicos','nbn','worms' ")
+    warning("The entered data base is incorrect, please select from 'itis','col','tropicos','nbn','worms' ")
+    return(NULL)
   }
   
   
