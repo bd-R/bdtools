@@ -1,0 +1,171 @@
+---
+title: "Taxonomic_Resolver_Dashboard"
+author: "Ashwin Agrawal"
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: rows
+    social: menu
+    source_code: embed
+runtime: shiny
+---
+
+```{r global, include=FALSE}
+# load data in 'global' chunk so it can be shared by all users of the dashboard
+library(shiny)
+library(semantic.dashboard)
+library(ggplot2)
+library(plotly)
+library(DT)
+
+suppressMessages(library(rgbif))
+suppressMessages(library(sp))
+suppressMessages(library(spatialEco))
+suppressMessages(library(ggmap))
+suppressMessages(library(plyr))
+suppressMessages(library(htmlTable))
+suppressMessages(library(bdvis))
+suppressMessages(library(plotly))
+suppressMessages(library(pracma))
+suppressMessages(library(xtable))
+suppressMessages(library(htmlTable))
+
+
+suppressMessages(library(rgbif))
+suppressMessages(library(sp))
+suppressMessages(library(spatialEco))
+suppressMessages(library(ggmap))
+suppressMessages(library(plyr))
+suppressMessages(library(htmlTable))
+suppressMessages(library(bdvis))
+suppressMessages(library(plotly))
+suppressMessages(library(pracma))
+suppressMessages(library(xtable))
+suppressMessages(library(htmlTable))
+d1 <- occ_data(
+  country = "AU",     # Country code for australia
+  classKey= 359,      # Class code for mammalia
+  limit=1000,
+  hasCoordinate = T
+  
+)
+
+X<-d1$data
+
+colscale <- c(semantic_palette[["red"]], semantic_palette[["green"]], semantic_palette[["blue"]])
+
+```
+
+Inputs {.sidebar}
+-----------------------------------------------------------------------
+
+```{r}
+ selectInput("clusterNum", label = h3("Taxonomic Level"), 
+    choices = list( "KINGDOM" = "KINGDOM", "PHYLUM" = "PHYLUM", "CLASS" = "CLASS", "ORDER" = "ORDER","FAMILY" = "FAMILY","GENUS"="GENUS","SPECIES"="SPECIES","SUBSPECIES"="SUBSPECIES"), 
+    selected = "GENUS")
+
+```
+
+Plotting the data based on taxon rank.
+Sample data used is Australian Mammals.
+
+
+```{r}
+#
+selectedData <- reactive({
+  
+  #X<-subset(X,select=c(eventDate,month,year))
+  num <- reactive((input$clusterNum))
+  data_taxon<-subset(X,X$taxonRank==num())
+  return(data_taxon)
+   
+})
+```
+
+```{r}
+#
+selectedColumn <- reactive({
+  
+  #X<-subset(X,select=c(eventDate,month,year))
+  num <- reactive((input$clusterNum))
+  #num1<-num()
+  #col_num
+  col_num<-which( colnames(X)==(tolower(num())))
+  return(col_num)
+   
+})
+```
+
+
+
+Column {.tabset}
+-----------------------------------------------------------------------
+
+###Bar-plot
+    
+```{r}
+library(ggplot2)
+ 
+  renderPlot({
+    #X1<-selectedData()
+    ggplot(X, aes(X$taxonRank)) +geom_bar(fill = semantic_palette[["green"]])
+    #c_2<-ddply(selectedData(),~year,summarise,frequency=length((year)))
+    #ggplot(c_2, aes(x=year,y=frequency)) + geom_bar(stat="identity")
+ 
+  
+  })
+  
+```
+
+###Choronorogram
+
+
+```{r}
+library(bdvis)
+ 
+  renderPlot({
+    data_bdvis<-selectedData()
+    data_bdvis<-subset(data_bdvis,select=c(eventDate,month,year))
+    names(data_bdvis)[names(data_bdvis) == "eventDate"] <- "Date_collected"
+     chronohorogram(data_bdvis)
+ 
+  
+  })
+  
+```
+
+
+Column {.tabset}
+-----------------------------------------------------------------------
+
+### Pie_Chart
+
+
+```{r}
+library(ggplot2)
+
+renderPlot({
+  X2<-selectedData()
+  var<-selectedColumn()
+  #X3<-X2[!is.na(X2$var),]
+  pie(table(X2[,var]), names(table(X2[,var])))
+  #ggplot(X2, aes(var)) +geom_bar(fill = semantic_palette[["red"]])
+  #c_1<-ddply(selectedData(),~month,summarise,frequency=length((month)))
+  #ggplot(c_1, aes(x=month,y=frequency)) + geom_bar(stat="identity")
+})
+```
+
+###Tempolar
+
+```{r}
+library(bdvis)
+
+renderPlot({
+   data_tempolar<-selectedData()
+   data_tempolar<-subset(data_tempolar,select=c(eventDate,month,year))
+    names(data_tempolar)[names(data_tempolar) == "eventDate"] <- "Date_collected"
+     tempolar(data_tempolar,timescale = "m")
+  
+})
+```
+
+
