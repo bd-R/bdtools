@@ -143,11 +143,18 @@ Column {.tabset}
 ```{r}
 library(ggplot2)
 
-renderPlot({
+renderPlotly({
   X2<-selectedData()
   var<-selectedColumn()
   #X3<-X2[!is.na(X2$var),]
-  pie(table(X2[,var]), names(table(X2[,var])))
+  dat<-X2[,var]
+  Z<-count(X2[,var])
+  plot_ly(Z, labels = Z[,1],values=~freq, type = 'pie',
+             textposition = 'inside',
+             textinfo = 'label+percent',
+             insidetextfont = list(color = '#FFFFFF'),
+             hoverinfo = 'text')
+  #pie(table(X2[,var]), names(table(X2[,var])),labels = piepercent)
   #ggplot(X2, aes(var)) +geom_bar(fill = semantic_palette[["red"]])
   #c_1<-ddply(selectedData(),~month,summarise,frequency=length((month)))
   #ggplot(c_1, aes(x=month,y=frequency)) + geom_bar(stat="identity")
