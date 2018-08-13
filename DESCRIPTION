@@ -1,0 +1,11 @@
+Package: bdtools
+Title: Biodiversity Data Tools
+Version: 0.0.1
+Author: Tomer Gueta <tomer.gu@gmail.com>, Vijay Barve <vijay.barve@gmail.com>, 
+	      Ashwin Agrawal <ashwin.agrawal.met14@itbhu.ac.in>,
+	      Carmel Yohay <yohay@cv.technion.ac.il>
+Maintainer: Ashwin Agrawal <ashwin.agrawal.met14@itbhu.ac.in>
+Description: Provides a set of tools to manage and manipulate biodiversity data cleaning protocols. 
+License: GPL-3
+Imports: rmarkdown, knitr, taxize, plyr
+RoxygenNote: 6.0.1
