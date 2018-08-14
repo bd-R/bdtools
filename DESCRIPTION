@@ -8,4 +8,4 @@ Maintainer: Ashwin Agrawal <ashwin.agrawal.met14@itbhu.ac.in>
 Description: Provides a set of tools to manage and manipulate biodiversity data cleaning protocols. 
 License: GPL-3
 Imports: rmarkdown, knitr, taxize, plyr
-RoxygenNote: 6.0.1
+RoxygenNote: 6.1.0
