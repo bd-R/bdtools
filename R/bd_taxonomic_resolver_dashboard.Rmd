@@ -42,21 +42,21 @@ suppressMessages(library(plotly))
 suppressMessages(library(pracma))
 suppressMessages(library(xtable))
 suppressMessages(library(htmlTable))
-d1 <- occ_data(
-  country = "AU",     # Country code for australia
-  classKey= 359,      # Class code for mammalia
-  limit=1000,
-  hasCoordinate = T
-  
-)
-
-d1$data$taxonRank[20]<-NA
-d1$data$taxonRank[40]<-NA
-d1$data$taxonRank[100]<-NA
-d1$data$taxonRank[150]<-NA
-X<-d1$data
-
-
+# d1 <- occ_data(
+#   country = "AU",     # Country code for australia
+#   classKey= 359,      # Class code for mammalia
+#   limit=1000,
+#   hasCoordinate = T
+#   
+# )
+# 
+# # d1$data$taxonRank[20]<-NA
+# # d1$data$taxonRank[40]<-NA
+# # d1$data$taxonRank[100]<-NA
+# # d1$data$taxonRank[150]<-NA
+# X<-d1$data
+# 
+# 
 colscale <- c(semantic_palette[["red"]], semantic_palette[["green"]], semantic_palette[["blue"]])
 
 ```
@@ -66,15 +66,89 @@ Taxonomic Filtering
 Inputs {.sidebar}
 -----------------------------------------------------------------------
 
+BIODIVERSITY DATA INPUT
+
+```{r}
+
+textInput("countryCode", label=h3("CountryCode"), value = "AU",  placeholder = "Enter the country code for example AU for Australia")
+
+```
+
+```{r}
+numericInput("classID", label = h3("ClassID"),value = 359, min = 10, max = 1000)
+
+```
+
+```{r}
+numericInput("obs", label = h3("Number of Observations"),value = 1000, min = 100, max = 10000)
+
+```
+
+```{r}
+selectCountry<-reactive({
+     
+     num<-reactive(input$countryCode)
+     return(num())
+
+})
+
+```
+
+```{r}
+selectClassID<-reactive({
+     
+     num<-reactive(input$classID)
+     return(num())
+
+})
+
+```
+
+```{r}
+selectObservations<-reactive({
+     
+     num<-reactive(input$obs)
+     return(num())
+
+})
+
+```
+
+```{r}
+
+DATA<-reactive({
+  
+  d1 <- occ_data(
+  country = selectCountry(),     # Country code for australia
+  classKey= selectClassID(),      # Class code for mammalia
+  limit=selectObservations(),
+  hasCoordinate = T
+  
+)
+
+# d1$data$taxonRank[20]<-NA
+# d1$data$taxonRank[40]<-NA
+# d1$data$taxonRank[100]<-NA
+# d1$data$taxonRank[150]<-NA
+return(X<-d1$data)
+  
+})
+
+```
+
+
+BIODIVERSITY DATA VISUALIZATION
+
+
+
 ```{r}
  selectInput("clusterNum", label = h3("Taxonomic Level"), 
     choices = list( "KINGDOM" = "KINGDOM", "PHYLUM" = "PHYLUM", "CLASS" = "CLASS", "ORDER" = "ORDER","FAMILY" = "FAMILY","GENUS"="GENUS","SPECIES"="SPECIES","SUBSPECIES"="SUBSPECIES"), 
     selected = "GENUS")
 
 ```
-
 Plotting the data based on taxon rank.
-Sample data used is Australian Mammals.
+Default data used is Australian Mammals.
 
 
 ```{r}
@@ -82,6 +156,7 @@ Sample data used is Australian Mammals.
 selectedData <- reactive({
   
   #X<-subset(X,select=c(eventDate,month,year))
+  X<-DATA()
   num <- reactive((input$clusterNum))
   data_taxon<-subset(X,X$taxonRank==num())
   return(data_taxon)
@@ -94,6 +169,7 @@ selectedData <- reactive({
 selectedColumn <- reactive({
   
   #X<-subset(X,select=c(eventDate,month,year))
+  X<-DATA()
   num <- reactive((input$clusterNum))
   #num1<-num()
   #col_num
@@ -115,7 +191,8 @@ library(ggplot2)
  
   renderPlot({
     #X1<-selectedData()
-    ggplot(X, aes(X$taxonRank)) +geom_bar(fill = semantic_palette[["green"]])
+    X<-DATA()
+    ggplot(X, aes(X$taxonRank)) +geom_bar(fill = semantic_palette[["green"]])+ labs(y="Count", x =        "Taxonomic Level")
     #c_2<-ddply(selectedData(),~year,summarise,frequency=length((year)))
     #ggplot(c_2, aes(x=year,y=frequency)) + geom_bar(stat="identity")
  
@@ -123,29 +200,6 @@ library(ggplot2)
   })
   
 ```
-
-###Choronorogram
-
-
-```{r}
-library(bdvis)
- 
-  renderPlot({
-    data_bdvis<-selectedData()
-    if(nrow(data_bdvis)==0){
-      NULL
-    }else{
-    data_bdvis<-subset(data_bdvis,select=c(eventDate,month,year))
-    names(data_bdvis)[names(data_bdvis) == "eventDate"] <- "Date_collected"
-     chronohorogram(data_bdvis)
-    }
- 
-  
-  })
-  
-```
-
-
 
 
 ### Pie_Chart
@@ -172,241 +226,288 @@ renderPlotly({
 })
 ```
 
+###Choronorogram
+
+
+```{r}
+library(bdvis)
+ 
+  renderPlot({
+    data_bdvis<-selectedData()
+    data_bdvis<-subset(data_bdvis,select=c(eventDate,month,year))
+    if(nrow(data_bdvis)==0){
+      NULL
+    }else{
+    names(data_bdvis)[names(data_bdvis) == "eventDate"] <- "Date_collected"
+    chronohorogram(data_bdvis)
+    }
+ 
+  
+  })
+  
+```
+
+
 ###Tempolar
+
 
 ```{r}
 library(bdvis)
 
 renderPlot({
    data_tempolar<-selectedData()
+   data_tempolar<-subset(data_tempolar,select=c(eventDate,month,year))
    if(nrow(data_tempolar)==0){
      NULL
    }else{
-   data_tempolar<-subset(data_tempolar,select=c(eventDate,month,year))
     names(data_tempolar)[names(data_tempolar) == "eventDate"] <- "Date_collected"
-     tempolar(data_tempolar,timescale = "m")
+    tempolar(data_tempolar,timescale = "m",plottype = "r")
    }
   
 })
 ```
 
-Taxonomic Resolver
-=====================================  
-
-Inputs {.sidebar}
------------------------------------------------------------------------
-
-Do you want to resolve the missing data?
-```{r}
- selectInput("clusterNum2", label = h3("Taxonomic Resolver "), 
-    choices = list("YES"="YES", "NO"="NO"), 
-    selected = "YES")
-
-```
 
 
- 
-If you want to resolve the data, select the taxonomic level for the resolution?
-```{r}
- selectInput("clusterNum3", label = h3("Taxonomic Resolver Level"), 
-    choices = list( "KINGDOM" = "KINGDOM", "PHYLUM" = "PHYLUM", "CLASS" = "CLASS", "ORDER" = "ORDER","FAMILY" = "FAMILY","GENUS"="GENUS","SPECIES"="SPECIES","SUBSPECIES"="SUBSPECIES"), 
-    selected = "SPECIES")
-
-```
+###Taxonomic-Tree
 
 
 ```{r}
-
-selectedTaxonomy<-reactive({
-  
-  num <- reactive((input$clusterNum2))
-  if(num()=="YES"){
-    return(1)
-  }else{
-    return(0)
-  }
-})
-
-```
-
-
-```{r}
-selectedColumn1 <- reactive({
-  
-  #X<-subset(X,select=c(eventDate,month,year))
-  num <- reactive((input$clusterNum3))
-  #num1<-num()
-  #col_num
-  col_num<-num()
-  return(col_num)
-   
-})
-
-
-
-```
-
-
-```{r}
-
-bd_taxonomic_resolver<-function(df,tax_rank){
-  
-  
-  if(nrow(df)==0){
-    return(0)
-  }else{
-    df_subset<-subset(df,taxonRank==tax_rank)
-    df_na<-subset(df,is.na(taxonRank))
-    
-    if(nrow(df_na)!=0){
-      count1<-nrow(df_na)
-      count2<-0
-      for (i in 1:nrow(df_na)){
-        if(!is.na( df_na$name[i])){
-          
-          #using only two data bases 'itis', 'ncbi' to keep the function simple
-          tax_hierarchy_itis <- suppressMessages(  
-            as.data.frame(taxize::classification(taxize::get_uid(df_na$name[i]), db = "itis")[[1]]))
-          tax_hierarchy_ncbi <- suppressMessages(
-            as.data.frame(taxize::classification(taxize::get_uid(df_na$name[i]), db = "ncbi")[[1]]))
-        }
-        
-        if(suppressMessages(!is.na(tax_hierarchy_ncbi[[1]]))){
-          
-          df_na$taxonRank[i]<-tax_hierarchy_ncbi$rank[nrow(tax_hierarchy_ncbi)]
-          
-        }else if(suppressMessages(!is.na(tax_hierarchy_itis[[1]]))){
-          
-          df_na$taxonRank[i]<-tax_hierarchy_itis$rank[nrow(tax_hierarchy_itis)]
-          
-        }else{
-          count2=count2+1
-          
-        }
-        
-      }
-      #Now combine both the data frames to form the final data frame
-      
-      df_subset<-df_subset[!is.na(df_subset$taxonRank),]
-      df_na<-subset(df_na,taxonRank=tax_rank)
-      #df_final<-rbind(df_subset,df_na)
-      
-      #cat("The number of records with missing taxon rank were",count1,"\n")
-      #cat("The number of records which are resolved:",count2,"\n")
-      if(nrow(df_na)==0){
-        return(1)
-      }else{
-        return(df_na)
-        }
-    }else{
-      
-      return(1)
-    }
-    
-  }
-  
-  
-}
-
-
-
-```
-
-
-
-  
-
-Column {.tabset}
------------------------------------------------------------------------
-
-###DataDisplay
-
-```{r}
-renderDataTable({
-if(selectedTaxonomy()==1){
-  
-  tax_name<-selectedColumn1()
-  dataFrame<-bd_taxonomic_resolver(X,tax_name)
-  if(dataFrame==0){
-    renderText({warning("The data frame is empty")})
-    NULL
-    
-  }else if(dataFrame==1){
-    
-    df_subset<-subset(X,taxonRank==tax_name)
-    df_subset
-  }else{
-    dataFrame
-    
-  }
-  
-}else{
-  
-  X
-}
-  
-  
-
-})
-
-```
-
-
-###MapPlot
-```{r}
+library(bdvis)
 
 renderPlot({
-  if(selectedTaxonomy()==1){
-  
-  tax_name<-selectedColumn1()
-  dataFrame<-bd_taxonomic_resolver(X,tax_name)
-  if(dataFrame==0){
-    renderText({warning("The data frame is empty")})
-    NULL
-    
-  }else if(dataFrame==1){
-   df_subset<-subset(X,taxonRank==tax_name)
-   if(nrow(df_subset)==0){
-     print(NULL)
+   data_taxotree<-selectedData()
+   data_taxotree<-subset(data_taxotree,select=c(family,genus))
+   data_taxotree_na<-na.omit(data_taxotree)
+   if(nrow(data_taxotree_na)==0 || ncol(data_taxotree_na)<2){
+     NULL
    }else{
-   mapgilbert <- get_map(location = c(lon = mean(df_subset$decimalLongitude), lat =                 
-   mean(df_subset$decimalLatitude)), zoom = 4,maptype = "terrain", scale = 2)
-    
-   map_1<-ggmap(mapgilbert) +
-   geom_point(data = df_subset, aes(x = decimalLongitude, y = decimalLatitude, alpha = 0.5, size =2,     colour="Red" ),shape=20)
-   print(map_1)
+    names(data_taxotree)[names(data_taxotree) == "family"] <- "Family"
+    names(data_taxotree)[names(data_taxotree) == "genus"] <- "Genus"
+    taxotree(data_taxotree)
    }
-   
-  }else{
-   df_subset<-subset(X,taxonRank==tax_name)
-   if(nrow(df_subset)==0){
-     print(NULL)
-   }else{
-   df_subset<-df_subset[!is.na(df_subset$taxonRank),]
-   mapgilbert <- get_map(location = c(lon = mean(df_subset$decimalLongitude), lat =                 
-   mean(df_subset$decimalLatitude)), zoom = 4,maptype = "terrain", scale = 2)
-    
-   map_1<-ggmap(mapgilbert) +
-   geom_point(data = df_subset, aes(x = decimalLongitude, y = decimalLatitude, alpha = 0.5, size =2,     colour="Red" ),shape=20)+geom_point(data=dataFrame,aes(x = decimalLongitude, y = decimalLatitude,     alpha = 0.5, size =4,colour="Blue" ),shape=20)
-   print(map_1)
-   }
-    
-  }
-  
-}else{
-  tax_name<-selectedColumn1()
-  df_subset<-subset(X,taxonRank==tax_name)
-  if(nrow(df_subset)==0){
-     print(NULL)
-   }else{
-   mapgilbert <- get_map(location = c(lon = mean(df_subset$decimalLongitude), lat =                 
-   mean(df_subset$decimalLatitude)), zoom = 4,maptype = "terrain", scale = 2)
-    
-   map_1<-ggmap(mapgilbert) +
-   geom_point(data = df_subset, aes(x = decimalLongitude, y = decimalLatitude, alpha = 0.5, size =2,     colour="Red" ),shape=20)
-   print(map_1)
-   }
-}
   
 })
 ```
+
+
+<!-- Taxonomic Resolver -->
+<!-- ===================================== -->
+
+<!-- Inputs {.sidebar} -->
+<!-- ----------------------------------------------------------------------- -->
+
+<!-- Do you want to resolve the missing data? -->
+<!-- ```{r} -->
+<!--  selectInput("clusterNum2", label = h3("Taxonomic Resolver "), -->
+<!--     choices = list("YES"="YES", "NO"="NO"), -->
+<!--     selected = "YES") -->
+
+<!-- ``` -->
+
+
+
+<!-- If you want to resolve the data, select the taxonomic level for the resolution? -->
+<!-- ```{r} -->
+<!--  selectInput("clusterNum3", label = h3("Taxonomic Resolver Level"), -->
+<!--     choices = list( "KINGDOM" = "KINGDOM", "PHYLUM" = "PHYLUM", "CLASS" = "CLASS", "ORDER" = "ORDER","FAMILY" = "FAMILY","GENUS"="GENUS","SPECIES"="SPECIES","SUBSPECIES"="SUBSPECIES"), -->
+<!--     selected = "SPECIES") -->
+
+<!-- ``` -->
+
+
+<!-- ```{r} -->
+
+<!-- selectedTaxonomy<-reactive({ -->
+
+<!--   num <- reactive((input$clusterNum2)) -->
+<!--   if(num()=="YES"){ -->
+<!--     return(1) -->
+<!--   }else{ -->
+<!--     return(0) -->
+<!--   } -->
+<!-- }) -->
+
+<!-- ``` -->
+
+
+<!-- ```{r} -->
+<!-- selectedColumn1 <- reactive({ -->
+
+<!--   #X<-subset(X,select=c(eventDate,month,year)) -->
+<!--   num <- reactive((input$clusterNum3)) -->
+<!--   #num1<-num() -->
+<!--   #col_num -->
+<!--   col_num<-num() -->
+<!--   return(col_num) -->
+
+<!-- }) -->
+
+
+
+<!-- ``` -->
+
+
+<!-- ```{r} -->
+
+<!-- bd_taxonomic_resolver<-function(df,tax_rank){ -->
+
+
+<!--   if(nrow(df)==0){ -->
+<!--     return(0) -->
+<!--   }else{ -->
+<!--     df_subset<-subset(df,taxonRank==tax_rank) -->
+<!--     df_na<-subset(df,is.na(taxonRank)) -->
+
+<!--     if(nrow(df_na)!=0){ -->
+<!--       count1<-nrow(df_na) -->
+<!--       count2<-0 -->
+<!--       for (i in 1:nrow(df_na)){ -->
+<!--         if(!is.na( df_na$name[i])){ -->
+
+<!--           #using only two data bases 'itis', 'ncbi' to keep the function simple -->
+<!--           tax_hierarchy_itis <- suppressMessages( -->
+<!--             as.data.frame(taxize::classification(taxize::get_uid(df_na$name[i]), db = "itis")[[1]])) -->
+<!--           tax_hierarchy_ncbi <- suppressMessages( -->
+<!--             as.data.frame(taxize::classification(taxize::get_uid(df_na$name[i]), db = "ncbi")[[1]])) -->
+<!--         } -->
+
+<!--         if(suppressMessages(!is.na(tax_hierarchy_ncbi[[1]]))){ -->
+
+<!--           df_na$taxonRank[i]<-tax_hierarchy_ncbi$rank[nrow(tax_hierarchy_ncbi)] -->
+
+<!--         }else if(suppressMessages(!is.na(tax_hierarchy_itis[[1]]))){ -->
+
+<!--           df_na$taxonRank[i]<-tax_hierarchy_itis$rank[nrow(tax_hierarchy_itis)] -->
+
+<!--         }else{ -->
+<!--           count2=count2+1 -->
+
+<!--         } -->
+
+<!--       } -->
+<!--       #Now combine both the data frames to form the final data frame -->
+
+<!--       df_subset<-df_subset[!is.na(df_subset$taxonRank),] -->
+<!--       df_na<-subset(df_na,taxonRank=tax_rank) -->
+<!--       #df_final<-rbind(df_subset,df_na) -->
+
+<!--       #cat("The number of records with missing taxon rank were",count1,"\n") -->
+<!--       #cat("The number of records which are resolved:",count2,"\n") -->
+<!--       if(nrow(df_na)==0){ -->
+<!--         return(1) -->
+<!--       }else{ -->
+<!--         return(df_na) -->
+<!--         } -->
+<!--     }else{ -->
+
+<!--       return(1) -->
+<!--     } -->
+
+<!--   } -->
+
+
+<!-- } -->
+
+
+
+<!-- ``` -->
+
+
+
+
+
+<!-- Column {.tabset} -->
+<!-- ----------------------------------------------------------------------- -->
+
+<!-- ###DataDisplay -->
+
+<!-- ```{r} -->
+<!-- renderDataTable({ -->
+<!-- if(selectedTaxonomy()==1){ -->
+
+<!--   tax_name<-selectedColumn1() -->
+<!--   dataFrame<-bd_taxonomic_resolver(X,tax_name) -->
+<!--   if(dataFrame==0){ -->
+<!--     renderText({warning("The data frame is empty")}) -->
+<!--     NULL -->
+
+<!--   }else if(dataFrame==1){ -->
+
+<!--     df_subset<-subset(X,taxonRank==tax_name) -->
+<!--     df_subset -->
+<!--   }else{ -->
+<!--     dataFrame -->
+
+<!--   } -->
+
+<!-- }else{ -->
+
+<!--   X -->
+<!-- } -->
+
+
+
+<!-- }) -->
+
+<!-- ``` -->
+
+
+<!-- ###MapPlot -->
+<!-- ```{r} -->
+
+<!-- renderPlot({ -->
+<!--   if(selectedTaxonomy()==1){ -->
+
+<!--   tax_name<-selectedColumn1() -->
+<!--   dataFrame<-bd_taxonomic_resolver(X,tax_name) -->
+<!--   if(dataFrame==0){ -->
+<!--     renderText({warning("The data frame is empty")}) -->
+<!--     NULL -->
+
+<!--   }else if(dataFrame==1){ -->
+<!--    df_subset<-subset(X,taxonRank==tax_name) -->
+<!--    if(nrow(df_subset)==0){ -->
+<!--      print(NULL) -->
+<!--    }else{ -->
+<!--    mapgilbert <- get_map(location = c(lon = mean(df_subset$decimalLongitude), lat = -->
+<!--    mean(df_subset$decimalLatitude)), zoom = 4,maptype = "terrain", scale = 2) -->
+
+<!--    map_1<-ggmap(mapgilbert) + -->
+<!--    geom_point(data = df_subset, aes(x = decimalLongitude, y = decimalLatitude, alpha = 0.5, size =2,     colour="Red" ),shape=20) -->
+<!--    print(map_1) -->
+<!--    } -->
+
+<!--   }else{ -->
+<!--    df_subset<-subset(X,taxonRank==tax_name) -->
+<!--    if(nrow(df_subset)==0){ -->
+<!--      print(NULL) -->
+<!--    }else{ -->
+<!--    df_subset<-df_subset[!is.na(df_subset$taxonRank),] -->
+<!--    mapgilbert <- get_map(location = c(lon = mean(df_subset$decimalLongitude), lat = -->
+<!--    mean(df_subset$decimalLatitude)), zoom = 4,maptype = "terrain", scale = 2) -->
+
+<!--    map_1<-ggmap(mapgilbert) + -->
+<!--    geom_point(data = df_subset, aes(x = decimalLongitude, y = decimalLatitude, alpha = 0.5, size =2,     colour="Red" ),shape=20)+geom_point(data=dataFrame,aes(x = decimalLongitude, y = decimalLatitude,     alpha = 0.5, size =4,colour="Blue" ),shape=20) -->
+<!--    print(map_1) -->
+<!--    } -->
+
+<!--   } -->
+
+<!-- }else{ -->
+<!--   tax_name<-selectedColumn1() -->
+<!--   df_subset<-subset(X,taxonRank==tax_name) -->
+<!--   if(nrow(df_subset)==0){ -->
+<!--      print(NULL) -->
+<!--    }else{ -->
+<!--    mapgilbert <- get_map(location = c(lon = mean(df_subset$decimalLongitude), lat = -->
+<!--    mean(df_subset$decimalLatitude)), zoom = 4,maptype = "terrain", scale = 2) -->
+
+<!--    map_1<-ggmap(mapgilbert) + -->
+<!--    geom_point(data = df_subset, aes(x = decimalLongitude, y = decimalLatitude, alpha = 0.5, size =2,     colour="Red" ),shape=20) -->
+<!--    print(map_1) -->
+<!--    } -->
+<!-- } -->
+
+<!-- }) -->
+<!-- ``` -->
